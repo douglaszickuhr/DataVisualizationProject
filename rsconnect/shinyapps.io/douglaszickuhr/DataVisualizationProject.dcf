@@ -1,0 +1,12 @@
+name: DataVisualizationProject
+title: DataVisualizationProject
+username:
+account: douglaszickuhr
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 334556
+bundleId: 1348266
+url: https://douglaszickuhr.shinyapps.io/DataVisualizationProject/
+when: 1525127558.39772
+asMultiple: FALSE
+asStatic: FALSE

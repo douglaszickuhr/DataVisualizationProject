@@ -192,73 +192,121 @@ server <- function(input, output, session) {
   
   # Reactive function to create the airport points based on the filtered data
   airportsPoints <- reactive({
+    
+    # Request input$date and input$type to go ahead
     req(input$date)
     req(input$type)
+    
+    # Create a dataframe with the filtered oneDay()
     aiportsPointsDF <- oneDay()
+    
+    # Aggregating the data related to the Airport.From
     aiportsPointsDF1 <- aiportsPointsDF %>% 
       group_by(City.From,Latitude.From,Longitude.From) %>%
       summarise() %>%
       mutate(City = City.From, Lat = Latitude.From, Long = Longitude.From) %>%
       select(City,Lat,Long)
     
+    # Aggregating the data related to the Airport.To
     aiportsPointsDF2 <- aiportsPointsDF %>% 
       group_by(City.To,Latitude.To,Longitude.To) %>%
       summarise() %>%
       mutate(City = City.To, Lat = Latitude.To, Long = Longitude.To) %>%
       select(City,Lat,Long)
     
+    # Creating a dataframe to output
     airportsOutput <- rbind(aiportsPointsDF1,aiportsPointsDF1) %>%
       distinct(City,Lat,Long)
     
+    # Returning the dataframe to be plot
     return(airportsOutput)
   })
   
+  # Reactive function to create the points to be plot on the map
   points <- reactive({
+    
+    # Requesting input$date and input$type
     req(input$date)
     req(input$type)
+    
+    # Function to generate the lines betwen the points
     linesGeneration <- function(x){
+      
+      # gcIntermediate function from geosphere package
       return <- gcIntermediate(c(oneDay$Longitude.To[x], 
                                  oneDay$Latitude.To[x]), 
                                c(oneDay$Longitude.From[x], 
                                  oneDay$Latitude.From[x]),
                                n = 50, addStartEnd = TRUE, 
                                breakAtDateLine = TRUE)
+      
+      # Create line from return
       return <- Line(return)
+      
+      # Create list of lines
       return <- Lines(list(return), ID = x)
+      
+      # Returning the generated Lines
       return
     }
     
+    # Creating another Dataframe with the filtered DF oneDay()
     oneDay <- oneDay()
+    
+    # Interating the dataframe calling the linesGeneration function
     Sl <- map(1:nrow(oneDay), linesGeneration)
+    
+    # SpatialLines function from geosphere package
     Sl <- SpatialLines(Sl)
+    
+    # Creating SpatialLinesDataFrame
     spatdf <- SpatialLinesDataFrame(Sl, oneDay, match.ID = TRUE)
+    
+    # Returning the spatial data frame
     spatdf
   })
   
+  
+  # Reactive function to generate the Sankey Diagram
   sankey <- reactive({
+    # Requesting input$date, input$type and input$sankey_rows
     req(input$date)
     req(input$type)
     req(input$sankey_rows)
+    
+    # Generating a dataframe to format the data
     df <- oneDay() %>%
       select(City.From,City.To,Total) %>%
       arrange(desc(Total)) %>%
       distinct() %>%
       head(input$sankey_rows)
     
+    # Creating nodes for Sankey
     nodes1 <- data.frame(name=c(unique(levels(factor(df[,1])))))
     nodes2 <- data.frame(name=c(unique(levels(factor(df[,2])))))
+    
+    # Creating names for Sankey
     nam1 <- seq_along(nodes1[,1])-1
     nam2 <- seq(length(nam1),length(nam1) + length(nodes2[,1])-1)
+    
+    # Assigning names to nam1 and nam2
     names(nam1) <- nodes1[,1]
     names(nam2) <- nodes2[,1]
+    
+    # Generating links for nodes
     links <- data.frame(source = nam1[as.character(df[,1])],
                         target = nam2[as.character(df[,2])],
                         value = df[,3])
     
+    
+    # Creating the plot - plotly library
     p <- plot_ly(
+      
+      # Fixed options
       type = "sankey",
       orientation = "h",
       
+      # Generating nodes
       node = list(
         label = c(names(nam1),names(nam2)),
         pad = 15,
@@ -269,27 +317,28 @@ server <- function(input, output, session) {
         )
       ),
       
+      # Generating links
       link = list(
         source = links$source,
         target = links$target,
         value =  links$value
       )
-    ) %>% 
-      layout(
-        title = "Basic Sankey Diagram",
-        font = list(
-          size = 10
-        )
-      )
+    )
     
+    # Returning the plot
     p
   })
   
-  # Create scatterplot object the plotOutput function is expecting 
+  # Rendering the Map
   output$mymap <- renderLeaflet({
+    
+    # Generating a pallete of colours based on the total of flights
     factpal <- colorFactor(palette =  c('green','yellow','orange','red'), points()$Total)
+    
+    # Plotting the map
     leaflet(data = points()) %>% 
       addTiles() %>% 
+      # Adding the polylines
       addPolylines(fillOpacity = 0.8, 
                    color = ~factpal(points()$Total),
                    weight = 1.5,
@@ -298,6 +347,7 @@ server <- function(input, output, session) {
                      fillOpacity = 1,
                      bringToFront = TRUE),
                    label = paste(oneDay()$Route," - ",oneDay()$Total, "flights.")) %>%
+      # Adding the circles
       addCircleMarkers(airportsPoints()$Long, 
                        airportsPoints()$Lat, 
                        radius=1, 
@@ -309,39 +359,53 @@ server <- function(input, output, session) {
       suspendScroll()
   })
   
+  # Rendering the Sankey Diagram
+  output$sankey <- renderPlotly({
+    sankey()
+  })
+  
+  # Rendering the Data Table
   output$datatable <- renderDataTable({
     table <- datatable(oneDay()[,c("Route","Total")])
     return(table)
   })
   
-  output$sankey <- renderPlotly({
-    sankey()
-  })
-  
+  # Rendering the information about the filtered data
   output$n <- renderUI({
+    
+    # Requesting the type
     req(input$type)
+    
+    # Creating a new dataframe to list the data
     types <- oneDay()
     
+    # Aggregating the data to generate the total by type
     types <- types %>%
       filter(Flight.Type %in% input$type) %>%
       group_by(Flight.Type) %>%
       summarise(Total = sum(Total))
     
+    # Generating a matrix with the same length of the dataframe
     n <- matrix("",length(types$Flight.Type))
     
+    # Iterating the dataframe and populating the matrix to output
     for (i in 1:length(types$Flight.Type)){
       desc <- levels(types$Flight.Type)[as.numeric(types[i,1])]
       n[i] <- paste(types[i,2],desc, "flights were found at this date.<br>")
     }
     
+    # Returning the matrix as HTML
     return(HTML(n))
   })
   
-  # Downloadable csv of selected dataset ----
+  # Rendering the option to download the file
   output$downloadData <- downloadHandler(
+    
+    # Function to return the filename
     filename = function() {
-      paste("flights-",format.Date(input$date,"%Y-%m-%d") , ".csv", sep = "")
+      paste("flights",format.Date(input$date,"%Y-%m-%d") , ".csv", sep = "")
     },
+    # Function to return the data
     content = function(file) {
       write.csv(oneDay()[,c("Route","Total")], file, row.names = FALSE)
     }
