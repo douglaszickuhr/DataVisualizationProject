@@ -356,7 +356,7 @@ server <- function(input, output, session) {
                      color = "black",
                      fillOpacity = 1,
                      bringToFront = TRUE),
-                   label = paste(oneDay()$Route," - ",oneDay()$Total, "flights.")) %>%
+                   label = paste(oneDay()$Route," - ",oneDay()$Total, "flight")) %>%
       # Adding the circles
       addCircleMarkers(airportsPoints()$Long, 
                        airportsPoints()$Lat, 
