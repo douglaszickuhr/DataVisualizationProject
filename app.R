@@ -89,9 +89,13 @@ ui <- fluidPage(
                 )
       ),
       wellPanel(h5("Built with",
-                   img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "30px"),
+                   tags$a(img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png",
+                              height = "30px"),
+                          hreg="https://shiny.rstudio.com/"),
                    "by",
-                   img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png", height = "30px"),
+                   tags$a(img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png",
+                              height = "30px"),
+                          href="https://www.rstudio.com"),
                    "."))
     ),
     
@@ -166,11 +170,17 @@ ui <- fluidPage(
       # Listing the total of records found.
       uiOutput(outputId = "n"),
       
-      h5(img(src = "https://www.ncirl.ie/Portals/0/nciLogo.png", height = "30px"),
+      h5(tags$a(img(src = "https://www.ncirl.ie/Portals/0/nciLogo.png", 
+                    height = "30px"),
+                href = "https://www.ncirl.ie"
+                ),
          br(),
-         "Student: Douglas Zickuhr",
+         tags$a("Student: Douglas Zickuhr",
+                href="https://www.linkedin.com/in/douglas-zickuhr/"),
          br(),
-         "Student Number: 17111781")
+         "Student Number: 17111781"),
+      tags$a(h5("Data extracted from Kaggle"),
+             href = "https://www.kaggle.com/ramirobentes/exploring-civil-aviation-in-brazil/data")
     )
   )
 )
