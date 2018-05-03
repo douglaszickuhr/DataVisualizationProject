@@ -43,8 +43,9 @@ totalByDay <- loadTotalByDay(file = 'TotalByDay.csv')
 ui <- fluidPage(
   
   # Title of panel
-  titlePanel(paste("Brazilian Flight Radar from","31/12/2014","to","31/07/2017"), 
+  titlePanel(paste("Brazilian Flight Radar for one day."), 
              windowTitle = "Data Visualization CA2 - Plot 1"),
+  helpText("The main on this dashboard is to visualize what happen on the Brazilian Air-trafic in one day."),
   sidebarLayout(
     
     # The panel has the select input
@@ -72,26 +73,24 @@ ui <- fluidPage(
                                    selected = levels(totalByDay$Flight.Type)
                 )
       ),
-      
-      # Well panel for Sankey Diagram configuration
-      wellPanel(h3("Sankey Configuration"),
-                
-                # Hint about this panel
-                helpText("Change the number of rows and check the Sankey Diagram"),
-                
-                # Number of top routes for Sankey
-                sliderInput(inputId = "sankey_rows",
-                            label = "Number of Top Routes",
-                            min = 1,
-                            max = 50,
-                            step = 5,
-                            value = 20
-                )
+      wellPanel(
+        h5(tags$a(img(src = "https://www.ncirl.ie/Portals/0/nciLogo.png", 
+                      height = "30px"),
+                  href = "https://www.ncirl.ie"
+        ),
+        br(),
+        tags$a("Student: Douglas Zickuhr",
+               href="https://www.linkedin.com/in/douglas-zickuhr/"),
+        br(),
+        "Student Number: 17111781"),
+        tags$a(h5("Data extracted from Kaggle"),
+               href = "https://www.kaggle.com/ramirobentes/exploring-civil-aviation-in-brazil/data")
       ),
+      
       wellPanel(h5("Built with",
                    tags$a(img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png",
                               height = "30px"),
-                          hreg="https://shiny.rstudio.com/"),
+                          href="https://shiny.rstudio.com/"),
                    "by",
                    tags$a(img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png",
                               height = "30px"),
@@ -112,11 +111,12 @@ ui <- fluidPage(
                  wellPanel(
                    
                    # Description of the plot
-                   h3("Route Map From/To Brazil on the date"),
+                   div(h3(HTML(paste("Route Map From/To Brazil on",
+                                     textOutput(outputId = "selectedDate1"))))),
                    hr(),
                    
                    # Hint about how the map works.
-                   helpText("Click on the lines to see the route. Click on the red circle to see."),
+                   helpText("Click on the lines to see the route. Click on the red circle to see airport information."),
                    br(),
                    
                    # Outputting the leaflet map.
@@ -128,11 +128,21 @@ ui <- fluidPage(
         
         # Second tab for Sankey Diagram
         tabPanel("Sankey Diagram",
-                 
                  #Well panel to organise the output
                  wellPanel(
                    # Description of the plot
-                   h3("Sankey Diagram - Top busiest routes"),
+                   div(style="display: inline-block;vertical-align:top; width: 60%;",h3(HTML(paste("Sankey Diagram - Top busiest routes on", textOutput(outputId = "selectedDate2"))))),
+                   
+                   # Number of top routes for Sankey
+                   div(style="display: inline-block;horizontal-align:right;vertical-align:top; width: 300px;",sliderInput(inputId = "sankey_rows",
+                                                                                                   label = "Number of Top Routes",
+                                                                                                   min = 1,
+                                                                                                   max = 50,
+                                                                                                   step = 5,
+                                                                                                   value = 20,
+                                                                                                   width = "50%",
+                                                                                                   animate = T)),
+                 
                    hr(),
                    
                    # A hint about the Sankey Diagram
@@ -170,17 +180,7 @@ ui <- fluidPage(
       # Listing the total of records found.
       uiOutput(outputId = "n"),
       
-      h5(tags$a(img(src = "https://www.ncirl.ie/Portals/0/nciLogo.png", 
-                    height = "30px"),
-                href = "https://www.ncirl.ie"
-                ),
-         br(),
-         tags$a("Student: Douglas Zickuhr",
-                href="https://www.linkedin.com/in/douglas-zickuhr/"),
-         br(),
-         "Student Number: 17111781"),
-      tags$a(h5("Data extracted from Kaggle"),
-             href = "https://www.kaggle.com/ramirobentes/exploring-civil-aviation-in-brazil/data")
+      helpText("The raw dataset contains over 2M flight observations from 31/Dec/2014 to 31/Jul/2017")
     )
   )
 )
@@ -200,6 +200,16 @@ server <- function(input, output, session) {
              Flight.Type %in% input$type)
   })
   
+  output$selectedDate1 <- renderText({
+    req(input$date)
+    format.Date(input$date,"%d/%b/%Y")
+  })
+  
+  output$selectedDate2 <- renderText({
+    req(input$date)
+    format.Date(input$date,"%d/%b/%Y")
+  })
+  
   # Reactive function to create the airport points based on the filtered data
   airportsPoints <- reactive({
     
@@ -214,15 +224,19 @@ server <- function(input, output, session) {
     aiportsPointsDF1 <- aiportsPointsDF %>% 
       group_by(City.From,Latitude.From,Longitude.From) %>%
       summarise() %>%
+      ungroup() %>%
       mutate(City = City.From, Lat = Latitude.From, Long = Longitude.From) %>%
       select(City,Lat,Long)
+      
     
     # Aggregating the data related to the Airport.To
     aiportsPointsDF2 <- aiportsPointsDF %>% 
       group_by(City.To,Latitude.To,Longitude.To) %>%
       summarise() %>%
+      ungroup() %>%
       mutate(City = City.To, Lat = Latitude.To, Long = Longitude.To) %>%
-      select(City,Lat,Long)
+      select(City,Lat,Long) %>%
+      ungroup()
     
     # Creating a dataframe to output
     airportsOutput <- rbind(aiportsPointsDF1,aiportsPointsDF1) %>%
@@ -360,7 +374,7 @@ server <- function(input, output, session) {
       # Adding the circles
       addCircleMarkers(airportsPoints()$Long, 
                        airportsPoints()$Lat, 
-                       radius=1, 
+                       radius=3, 
                        color = "red",
                        fillOpacity = 1, 
                        fill = 1, 
