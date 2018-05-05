@@ -44,7 +44,7 @@ ui <- fluidPage(
   
   # Title of panel
   titlePanel(paste("Brazilian Flight Overview for one day"), 
-             windowTitle = "Data Visualization CA2 - Plot 1"),
+             windowTitle = "Data Visualization Final Project - Dashboard 1"),
   helpText("The purpose on this dashboard is to visualize what happen on the Brazilian Air-trafic in one day."),
   sidebarLayout(
     
