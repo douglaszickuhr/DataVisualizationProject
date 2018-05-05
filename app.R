@@ -1,8 +1,8 @@
 # National College of Ireland
 # Data Visualization Project
-# Interactive Visualization 1
+# Interactive Visualization - Dashboard 1
 # Title: Overview of Flights in Brazil by date
-# Author: Douglas Zikcuhr
+# Author: Douglas Zickuhr
 
 # Loading libraries
 library(lubridate)
