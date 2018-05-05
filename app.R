@@ -43,9 +43,9 @@ totalByDay <- loadTotalByDay(file = 'TotalByDay.csv')
 ui <- fluidPage(
   
   # Title of panel
-  titlePanel(paste("Brazilian Flight Radar for one day."), 
+  titlePanel(paste("Brazilian Flight Overview for one day"), 
              windowTitle = "Data Visualization CA2 - Plot 1"),
-  helpText("The main on this dashboard is to visualize what happen on the Brazilian Air-trafic in one day."),
+  helpText("The purpose on this dashboard is to visualize what happen on the Brazilian Air-trafic in one day."),
   sidebarLayout(
     
     # The panel has the select input
@@ -123,7 +123,8 @@ ui <- fluidPage(
                    leafletOutput(outputId = "mymap"),
                    
                    # Another hint below the map
-                   helpText("Red lines means heavy flow. Green line means light flow")
+                   helpText("Red lines means heavy flow. Green line means light flow"),
+                   helpText("The thickest the line is, highest is the flow on that route")
                  )),
         
         # Second tab for Sankey Diagram
@@ -142,6 +143,8 @@ ui <- fluidPage(
                                                                                                    value = 20,
                                                                                                    width = "50%",
                                                                                                    animate = T)),
+                   helpText("It is possible to change the number of top routes to be plot on the slider above"),
+                   helpText("If clicked on the play button, an animation will be started and the plot will be automatically updated"),
                  
                    hr(),
                    
@@ -225,7 +228,9 @@ server <- function(input, output, session) {
       group_by(City.From,Latitude.From,Longitude.From) %>%
       summarise() %>%
       ungroup() %>%
-      mutate(City = City.From, Lat = Latitude.From, Long = Longitude.From) %>%
+      mutate(City = City.From, 
+             Lat = Latitude.From, 
+             Long = Longitude.From) %>%
       select(City,Lat,Long)
       
     
@@ -234,7 +239,9 @@ server <- function(input, output, session) {
       group_by(City.To,Latitude.To,Longitude.To) %>%
       summarise() %>%
       ungroup() %>%
-      mutate(City = City.To, Lat = Latitude.To, Long = Longitude.To) %>%
+      mutate(City = City.To, 
+             Lat = Latitude.To, 
+             Long = Longitude.To) %>%
       select(City,Lat,Long) %>%
       ungroup()
     
@@ -330,6 +337,7 @@ server <- function(input, output, session) {
       type = "sankey",
       orientation = "h",
       
+      
       # Generating nodes
       node = list(
         label = c(names(nam1),names(nam2)),
@@ -365,7 +373,7 @@ server <- function(input, output, session) {
       # Adding the polylines
       addPolylines(fillOpacity = 0.8, 
                    color = ~factpal(points()$Total),
-                   weight = 1.5,
+                   weight = oneDay()$Total,
                    highlight = highlightOptions(
                      color = "black",
                      fillOpacity = 1,
